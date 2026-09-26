@@ -72,7 +72,7 @@ Pronto: esse comando instala **tudo** que o openTARS precisa, pulando o que voc�
 - **um modelo de conversa escolhido pelo seu hardware**, se você ainda não tiver nenhum: `qwen3:8b` com placa de vídeo de 6 GB ou mais, `qwen3:4b` com 12 GB de RAM ou mais, e `qwen3:1.7b` nos demais
 - o atalho no menu de aplicativos
 
-O ajudante `qwen2.5:0.5b` virou opcional na 3.0 e não é mais baixado: quem já tem continua usando nos desempates (pra baixar mesmo assim: `TARS_BAIXAR_AJUDANTE=1`). A **voz** também é opcional: instale pelo botão **Voz** da janela ou com `opentars --instalar-voz`.
+Nenhum modelo ajudante é baixado: quem decide o tipo de cada pedido é a **helper Murph 1.0**, que já vem no pacote (3.0.5). O antigo `qwen2.5:0.5b` saiu do download; se você já tiver ele, só desempata enquanto acertar mais que a Murph no `--avaliar-classificador`. A **voz** também é opcional: instale pelo botão **Voz** da janela ou com `opentars --instalar-voz`.
 
 O instalador fala o idioma do seu sistema. Pra **atualizar**, rode o mesmo comando: o histórico de conversas e as suas escolhas são mantidos.
 
@@ -106,8 +106,8 @@ sudo apt install -y --reinstall ./opentars_all.deb
 
 ```mermaid
 flowchart LR
-    P([Seu pedido]) --> L{{"Camadas<br/>palavras · contexto · formato<br/>apps · embeddings"}}
-    L -- "empate" --> A{{"Ajudante<br/>só entre as finalistas"}}
+    P([Seu pedido]) --> L{{"Camadas<br/>palavras · contexto · formato<br/>helper Murph · apps · embeddings"}}
+    L -- "empate" --> A{{"Ajudante antigo<br/>só se já instalado"}}
     L & A --> M["Fila de modelos<br/>tamanho · VRAM · acertos no seu PC"]
     M --> IA["IA de conversa<br/>pensa antes se tiver várias etapas"]
     IA --> F["Ferramentas<br/>acessibilidade · OCR · visão · teclado · terminal · web"]
@@ -124,10 +124,10 @@ Cada camada olha o pedido de um jeito e dá votos. Quando uma delas é clara, as
 | **Palavras-chave** | verbo ou alvo explícito | "**feche** o Firefox" → ação, na hora |
 | **Contexto** | continuação do pedido anterior | "agora clica no =" depois de abrir a calculadora → ação |
 | **Formato** | código colado, erro, comando, link, pergunta, cumprimento | um `Traceback` → código; `E: dpkg...` → Linux/sistema |
-| **Murph** (3.0.4) | a ajudante local: um modelo pequeno treinado com ~2.900 frases nos 5 idiomas (os exemplos do openTARS mais frases novas escritas por um modelo grande, a receita do TinyStories). Roda em ~0,2 ms, sem Ollama. Num teste cego, com pedidos bagunçados que ela nunca viu, acertou 93% sozinha (o classificador antigo: 84%); quando diz que está segura, acerta 99%. Pedido estranho (letras aleatórias, outra língua) fica em dúvida e passa pras camadas seguintes | "abaixa um pouquinho o som" → ação |
+| **helper Murph 1.0** | a ajudante local, que já vem no pacote (aparece na barra de status da janela e no `opentars --version`): um modelo pequeno treinado com ~2.900 frases nos 5 idiomas (os exemplos do openTARS mais frases novas escritas por um modelo grande, a receita do TinyStories). Roda em ~0,2 ms, sem Ollama. Num teste cego, com pedidos bagunçados que ela nunca viu, acertou 93% sozinha (o classificador antigo: 84%); quando diz que está segura, acerta 99%. Pedido estranho (letras aleatórias, outra língua) fica em dúvida e passa pras camadas seguintes | "abaixa um pouquinho o som" → ação |
 | **Apps** | cita um app instalado | "o spotify tá mudo" → ação |
 | **Embeddings** | o *sentido*, comparado com frases de exemplo, em qualquer idioma (~20 ms) | "minha tela ficou preta depois do update" → Linux/sistema |
-| **Ajudante** | só se as camadas empatarem: escolhe **só entre as 2–3 finalistas**, recebendo as pistas das outras camadas e escrevendo o motivo antes de escolher. Se ele responde sempre a mesma coisa, ou vai mal no `--avaliar-classificador`, deixa de ser consultado | "quero umas receitas de lasanha pra assistir" → busca |
+| **Ajudante antigo** | não é mais baixado (3.0.5). Se o `qwen2.5:0.5b` já estiver instalado, só entra se as camadas empatarem, escolhendo entre as 2–3 finalistas; se ele acertar menos que a Murph no `--avaliar-classificador`, deixa de ser consultado | "quero umas receitas de lasanha pra assistir" → busca |
 | **Coerência** | corrige resultado sem sentido | "conversa simples" num pedido de 20 palavras → geral |
 
 A camada também percebe **pedidos com várias etapas** ("abre o Claude **e** faz uma pergunta"). Nesses, a IA pensa antes de agir, recebe um lembrete de fazer tudo e o pedido vai pro maior modelo que roda bem no seu PC.
@@ -246,7 +246,7 @@ Outros comandos:
 | Comando | O que faz |
 |---|---|
 | `opentars --diagnostico` | confere Ollama, modelos, GPU, tela, janelas, acessibilidade e atalho (não mexe em nada) |
-| `opentars --autoteste` | diagnóstico + precisão do ajudante + o teste real com a calculadora |
+| `opentars --autoteste` | diagnóstico + precisão da escolha da tarefa + o teste real com a calculadora |
 | `opentars --avaliar-classificador` | mede o quanto cada camada (e o modo AUTO) acerta no seu PC |
 | `opentars --explicar "pedido"` | mostra, camada por camada, como a tarefa e o modelo são escolhidos |
 | `opentars --instalar-voz` | instala a voz (Whisper + Piper, ~700 MB, tudo local, na sua pasta) |
@@ -291,7 +291,7 @@ A IA responde no idioma escolhido, e entende pedidos em qualquer um deles: as pa
 | Variável | Pra quê | Padrão |
 |---|---|---|
 | `OLLAMA_HOST` | endereço do Ollama | `127.0.0.1:11434` |
-| `TARS_MODELO_AJUDANTE` | trocar o modelo ajudante (opcional desde a 3.0) | `qwen2.5:0.5b` |
+| `TARS_MODELO_AJUDANTE` | nome do ajudante antigo, se você tiver um instalado (não é baixado desde a 3.0.5) | `qwen2.5:0.5b` |
 | `TARS_SERVIDOR_API` / `TARS_CHAVE_API` | servidor compatível com a OpenAI e a chave dele | o de `opentars --servidor` |
 | `TARS_WHISPER` / `TARS_WHISPER_ATIVACAO` | modelos do Whisper pro pedido e pro "TARS" | `base` / `tiny` |
 | `TARS_YDOTOOL=0` | não usa o ydotool no Wayland | ligado se disponível |
@@ -365,7 +365,7 @@ Confira se o microfone certo está como padrão nas configurações de som e se 
 
 Rode `opentars --explicar "o seu pedido"`: ele mostra o que cada camada achou, a tarefa decidida, a fila de modelos e o placar de cada um no seu PC.
 
-Pra medir o acerto geral, use `opentars --avaliar-classificador`: ele mostra quanto cada camada acerta sozinha (Murph, embeddings, ajudante), quanto o modo AUTO acerta com todas juntas e em quais frases erra. Se o ajudante for mal sozinho, o modo AUTO para de consultá-lo. Sem modelo de embeddings, rode `ollama pull granite-embedding:278m`. Os exemplos de cada tipo de pedido ficam em `tars_exemplos.py` e `tars_exemplos_mais.py`: acrescentar ali uma frase real que caiu no lugar errado já corrige casos parecidos (a Murph aprende com elas quando é retreinada: `python3 murph/treinar_murph.py`, que precisa do scikit-learn). Pra comparar com o classificador antigo no seu PC: `TARS_MURPH=off opentars --avaliar-classificador`. Também dá pra fixar um modelo no seletor **IA** da janela.
+Pra medir o acerto geral, use `opentars --avaliar-classificador`: ele mostra quanto cada camada acerta sozinha (Murph, embeddings, ajudante), quanto o modo AUTO acerta com todas juntas e em quais frases erra. Se o ajudante antigo acertar menos que a Murph sozinha, o modo AUTO para de consultá-lo. Sem modelo de embeddings, rode `ollama pull granite-embedding:278m`. Os exemplos de cada tipo de pedido ficam em `tars_exemplos.py` e `tars_exemplos_mais.py`: acrescentar ali uma frase real que caiu no lugar errado já corrige casos parecidos (a Murph aprende com elas quando é retreinada: `python3 murph/treinar_murph.py`, que precisa do scikit-learn). Pra comparar com o classificador antigo no seu PC: `TARS_MURPH=off opentars --avaliar-classificador`. Também dá pra fixar um modelo no seletor **IA** da janela.
 </details>
 
 <details>
